@@ -17,8 +17,12 @@ done
 # Создание админа demo_visitor
 curl -s -X POST http://127.0.0.1:4533/auth/createAdmin \
   -H "Content-Type: application/json" \
-  -d "{\"userName\":\"${NAVIDROME_USER}\",\"name\":\"Demo Visitor\",\"password\":\"${NAVIDROME_PASS}\"}" || true
-
+  -d '{
+    "userName": "'"${NAVIDROME_USER:-demo_visitor}"'",
+    "name": "Demo Visitor",
+    "password": "'"${NAVIDROME_PASS:-DemoVisitorPass2026!}"'"
+  }' || true
+  
 # Остановка временного процесса
 kill "$NAVI_PID"
 wait "$NAVI_PID" 2>/dev/null || true
