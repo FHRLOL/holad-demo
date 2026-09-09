@@ -7,7 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends supervisor && r
 
 COPY --from=navidrome_bin /app/navidrome /app/navidrome
 
-RUN mkdir -p /data/navidrome /music /data/holad /etc/supervisor/conf.d
+RUN mkdir -p /data/navidrome /music /data/holad /etc/supervisor/conf.d \
+    && chmod -R 777 /data /music /tmp
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
@@ -26,4 +27,7 @@ ENV ND_ENABLELEGACYENDPOINTS=true
 
 EXPOSE 10000
 
-CMD ["/bin/sh", "-c", "/app/navidrome user create --datafolder /data/navidrome -u demo_visitor -p 'DemoVisitorPass2026!' --admin=false 2>/dev/null || true; /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf"]
+# Сбрасываем родной entrypoint Holad, чтобы контроль перешел supervisord
+ENTRYPOINT []
+
+CMD ["/bin/sh", "-c", "/app/navidrome user create --datafolder /data/navidrome -u demo_visitor -p 'DemoVisitorPass2026!' --admin=false 2>/dev/null || true; exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf"]
