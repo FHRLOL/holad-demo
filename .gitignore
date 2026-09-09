@@ -1,0 +1,15 @@
+*.exe
+*.dll
+*.zip
+
+download.bat
+download.ps1
+ffmpeg_temp/
+
+Thumbs.db
+[Dd]esktop.ini
+.DS_Store
+
+*.db
+*.db-shm
+*.db-wal
