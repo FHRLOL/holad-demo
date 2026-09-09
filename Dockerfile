@@ -2,7 +2,13 @@ FROM ghcr.io/fhrha/holad:latest
 
 USER root
 
-RUN apt-get update && apt-get install -y --no-install-recommends supervisor curl tar ca-certificates ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    supervisor \
+    curl \
+    tar \
+    ca-certificates \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /opt/navidrome \
     && curl -fsSL https://github.com/navidrome/navidrome/releases/download/v0.54.5/navidrome_0.54.5_linux_amd64.tar.gz | tar -xvz -C /opt/navidrome/ \
@@ -13,6 +19,8 @@ RUN mkdir -p /data/navidrome /music /data/holad /etc/supervisor/conf.d \
 
 COPY music/ /music/
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 ENV PORT=10000
 ENV BASE_PATH=/
@@ -23,9 +31,6 @@ ENV NAVIDROME_URL=http://127.0.0.1:4533
 ENV NAVIDROME_USER=demo_visitor
 ENV NAVIDROME_PASS=DemoVisitorPass2026!
 
-# Нативные переменные Navidrome для автоматического создания пользователя
-ENV ND_DEFAULTADMINUSERNAME=demo_visitor
-ENV ND_DEFAULTADMINPASSWORD=DemoVisitorPass2026!
 ENV ND_DATAFOLDER=/data/navidrome
 ENV ND_MUSICFOLDER=/music
 ENV ND_SCANSCHEDULE=1h
@@ -34,6 +39,4 @@ ENV ND_ENABLETRANSCODINGCONFIG=true
 
 EXPOSE 10000
 
-ENTRYPOINT []
-
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+ENTRYPOINT ["/entrypoint.sh"]
