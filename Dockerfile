@@ -1,14 +1,17 @@
-FROM deluan/navidrome:latest AS navidrome_bin
 FROM ghcr.io/fhrha/holad:latest
 
 USER root
 
-RUN apt-get update && apt-get install -y --no-install-recommends supervisor && rm -rf /var/lib/apt/lists/*
+# Ставим зависимости: supervisor, curl, tar
+RUN apt-get update && apt-get install -y --no-install-recommends supervisor curl tar ca-certificates && rm -rf /var/lib/apt/lists/*
 
-COPY --from=navidrome_bin /app/navidrome /app/navidrome
+# Ставим нативный Linux x86_64 бинарник Navidrome
+RUN mkdir -p /opt/navidrome \
+    && curl -fsSL https://github.com/navidrome/navidrome/releases/download/v0.54.5/navidrome_0.54.5_linux_amd64.tar.gz | tar -xvz -C /opt/navidrome/ \
+    && chmod +x /opt/navidrome/navidrome
 
 RUN mkdir -p /data/navidrome /music /data/holad /etc/supervisor/conf.d \
-    && chmod -R 777 /data /music /tmp
+    && chmod -R 777 /data /music /tmp /opt/navidrome
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
@@ -27,7 +30,6 @@ ENV ND_ENABLELEGACYENDPOINTS=true
 
 EXPOSE 10000
 
-# Сбрасываем родной entrypoint Holad, чтобы контроль перешел supervisord
 ENTRYPOINT []
 
-CMD ["/bin/sh", "-c", "/app/navidrome user create --datafolder /data/navidrome -u demo_visitor -p 'DemoVisitorPass2026!' --admin=false 2>/dev/null || true; exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/bin/sh", "-c", "/opt/navidrome/navidrome user create --datafolder /data/navidrome -u demo_visitor -p 'DemoVisitorPass2026!' --admin=false 2>/dev/null || true; exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf"]
