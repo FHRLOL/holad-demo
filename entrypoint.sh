@@ -10,37 +10,24 @@ set -e
 NAVI_PID=$!
 
 # Ожидание готовности сервера
+echo "Waiting for Navidrome ping..."
 until curl -s -f http://127.0.0.1:4533/ping > /dev/null 2>&1; do
   sleep 0.5
 done
 
-USER="${NAVIDROME_USER:-demo_visitor}"
-PASS="${NAVIDROME_PASS:-DemoVisitorPass2026!}"
-
-# Создание начального пользователя
+# Создание администратора с гарантированными значениями полей
+echo "Creating admin user..."
 curl -s -X POST http://127.0.0.1:4533/auth/createAdmin \
   -H "Content-Type: application/json" \
-  -d "{\"userName\":\"${USER}\",\"name\":\"Demo Visitor\",\"password\":\"${PASS}\"}" || true
+  -d '{"username":"demo_visitor","name":"Demo Visitor","password":"DemoVisitorPass2026!"}' || true
 
-# Запуск и ожидание полного сканирования библиотеки
-curl -s "http://127.0.0.1:4533/rest/startScan.view?u=${USER}&p=${PASS}&v=1.16.1&c=init&f=json" > /dev/null 2>&1 || true
+# Ожидание 10 секунд для первичного сканирования 52 треков
+echo "Waiting for music indexing..."
+sleep 10
 
-echo "Scanning music library..."
-while true; do
-  SCAN_STATUS=$(curl -s "http://127.0.0.1:4533/rest/getScanStatus.view?u=${USER}&p=${PASS}&v=1.16.1&c=init&f=json" || true)
-  if echo "$SCAN_STATUS" | grep -q '"scanning":false'; then
-    COUNT=$(echo "$SCAN_STATUS" | grep -o '"count":[0-9]*' | cut -d: -f2 || echo "0")
-    if [ "${COUNT:-0}" -gt 0 ]; then
-      echo "Scan finished. Total tracks indexed: $COUNT"
-      break
-    fi
-  fi
-  sleep 1
-done
-
-# Корректная остановка перед передачей управления supervisord
+# Корректная остановка фонового процесса
 kill "$NAVI_PID"
 wait "$NAVI_PID" 2>/dev/null || true
 
-# Запуск основного стека
+echo "Navidrome initialized. Launching supervisord..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
